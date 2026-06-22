@@ -1,6 +1,6 @@
 {
   "name": "@volare-consulting/mermaid-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server that renders Mermaid diagrams to PNG via @mermaid-js/mermaid-cli",
   "license": "MIT",
   "type": "module",
@@ -36,7 +36,7 @@
     "prepublishOnly": "npm run build",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
-    "test": "node --import tsx --test test/render.test.ts test/mcp.test.ts"
+    "test": "node --import tsx --test test/browser.test.ts test/render.test.ts test/mcp.test.ts"
   },
   "dependencies": {
     "@mermaid-js/mermaid-cli": "^11.4.2",

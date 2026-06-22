@@ -2,6 +2,7 @@ import { mkdtemp, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, isAbsolute } from "node:path";
 import { run as mmdcRun } from "@mermaid-js/mermaid-cli";
+import { resolveBrowserExecutable, isBrowserLaunchError, browserSetupError } from "./browser.js";
 
 export type MermaidTheme = "default" | "dark" | "forest" | "neutral";
 
@@ -59,26 +60,39 @@ export async function renderMermaidToPng(opts: RenderOptions): Promise<RenderRes
   await writeFile(inputPath, diagram, "utf8");
 
   try {
-    await mmdcRun(
-      inputPath as `${string}.mmd`,
-      outputPath as `${string}.png`,
-      {
-        quiet: true,
-        puppeteerConfig: { args: ["--no-sandbox", "--disable-setuid-sandbox"] },
-        parseMMDOptions: {
-          backgroundColor: opts.backgroundColor ?? "white",
-          mermaidConfig: { theme: opts.theme ?? "default" },
-          viewport:
-            opts.width || opts.height || opts.scale
-              ? {
-                  width: opts.width ?? 800,
-                  height: opts.height ?? 600,
-                  deviceScaleFactor: opts.scale ?? 1,
-                }
-              : undefined,
+    // Prefer a browser the user already has (or an explicit override); otherwise
+    // fall back to puppeteer's bundled/downloaded Chromium by leaving it unset.
+    const executablePath = resolveBrowserExecutable();
+    const puppeteerConfig = {
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      ...(executablePath ? { executablePath } : {}),
+    };
+
+    try {
+      await mmdcRun(
+        inputPath as `${string}.mmd`,
+        outputPath as `${string}.png`,
+        {
+          quiet: true,
+          puppeteerConfig,
+          parseMMDOptions: {
+            backgroundColor: opts.backgroundColor ?? "white",
+            mermaidConfig: { theme: opts.theme ?? "default" },
+            viewport:
+              opts.width || opts.height || opts.scale
+                ? {
+                    width: opts.width ?? 800,
+                    height: opts.height ?? 600,
+                    deviceScaleFactor: opts.scale ?? 1,
+                  }
+                : undefined,
+          },
         },
-      },
-    );
+      );
+    } catch (err) {
+      // Turn an obscure "couldn't find/launch the browser" failure into guidance.
+      throw isBrowserLaunchError(err) ? browserSetupError(err) : err;
+    }
 
     const bytes = await readFile(outputPath);
     if (!bytes.subarray(0, 4).equals(PNG_MAGIC)) {

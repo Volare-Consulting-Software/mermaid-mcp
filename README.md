@@ -28,14 +28,27 @@ supplied, the file is written there and the path is included in the summary.
 
 ```bash
 npm install
-npx puppeteer browsers install chrome   # download the headless Chromium used for rendering
 npm run build
 ```
 
-Rendering runs a headless Chromium via Puppeteer. If `npm install` doesn't fetch it automatically,
-run `npx puppeteer browsers install chrome` (as above). It lands in Puppeteer's cache
-(`~/.cache/puppeteer` / `%USERPROFILE%\.cache\puppeteer`). On Windows, if extraction stalls, delete
-the partial `chrome/win64-*` folder and re-run the install.
+## Browser requirement
+
+Mermaid renders inside a real browser (it needs a DOM for layout), so a Chromium-family browser is
+required. The server finds one automatically, in this order:
+
+1. **`MERMAID_MCP_EXECUTABLE_PATH`** or **`PUPPETEER_EXECUTABLE_PATH`** — an explicit path you set.
+2. **An installed system browser** — Google Chrome, Microsoft Edge, or Chromium, auto-detected at
+   the usual locations for your OS. If you already have one of these, **nothing extra to download**.
+3. **Puppeteer's bundled Chromium** — `@mermaid-js/mermaid-cli` downloads this during `npm install`
+   as a fallback for machines with no browser.
+
+If none can be launched, the tool returns an actionable error telling you to install Chrome/Edge,
+run `npx puppeteer browsers install chrome`, or set `MERMAID_MCP_EXECUTABLE_PATH`.
+
+> On some Windows machines Puppeteer's automatic Chromium download stalls mid-extraction. Having
+> Chrome or Edge installed sidesteps it entirely (option 2 above). To repair a stalled download,
+> delete the partial `%USERPROFILE%\.cache\puppeteer\chrome*\win64-*` folder and re-run
+> `npx puppeteer browsers install chrome`.
 
 ## Test
 
