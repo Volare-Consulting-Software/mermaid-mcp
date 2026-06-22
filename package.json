@@ -1,0 +1,32 @@
+{
+  "name": "mermaid-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that renders Mermaid diagrams to PNG via @mermaid-js/mermaid-cli",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "mermaid-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "smoke": "tsx scripts/smoke.ts"
+  },
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "^11.4.2",
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "@types/node": "^22.9.0"
+  }
+}
