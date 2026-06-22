@@ -33,11 +33,42 @@ export interface RenderResult {
 
 const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
+// Substrings that mean "Puppeteer couldn't find or launch a browser" (as opposed
+// to a genuine diagram/syntax error, which we must not silently retry).
+const BROWSER_LAUNCH_HINTS = [
+  "could not find",
+  "failed to launch",
+  "browser was not found",
+  "executable doesn't exist",
+  "no usable sandbox",
+  "spawn",
+  "enoent",
+];
+
+function isBrowserLaunchError(err: unknown): boolean {
+  const message = (err instanceof Error ? err.message : String(err)).toLowerCase();
+  return BROWSER_LAUNCH_HINTS.some((hint) => message.includes(hint));
+}
+
+function browserSetupError(original: unknown): Error {
+  const detail = original instanceof Error ? original.message : String(original);
+  return new Error(
+    "Could not launch Chrome to render the diagram. Fix any one of:\n" +
+      "  - Install Google Chrome, or run: npx puppeteer browsers install chrome\n" +
+      "  - Or set PUPPETEER_EXECUTABLE_PATH to a Chrome/Chromium binary.\n" +
+      `Original error: ${detail}`,
+  );
+}
+
 /**
  * Render a Mermaid diagram to a PNG using @mermaid-js/mermaid-cli (Puppeteer/Chromium).
  *
  * The mermaid-cli programmatic API works off files, so the source is written to a
  * temporary `.mmd` file and the PNG is produced either at `outputPath` or in a temp dir.
+ *
+ * Puppeteer resolves the browser: the first attempt uses `PUPPETEER_EXECUTABLE_PATH`
+ * (if set) or Puppeteer's bundled Chromium; if that can't launch, it falls back to a
+ * system-installed Google Chrome (`channel: "chrome"`). No hardcoded paths.
  */
 export async function renderMermaidToPng(opts: RenderOptions): Promise<RenderResult> {
   const diagram = opts.diagram?.trim();
@@ -58,27 +89,46 @@ export async function renderMermaidToPng(opts: RenderOptions): Promise<RenderRes
 
   await writeFile(inputPath, diagram, "utf8");
 
+  const parseMMDOptions = {
+    backgroundColor: opts.backgroundColor ?? "white",
+    mermaidConfig: { theme: opts.theme ?? "default" },
+    viewport:
+      opts.width || opts.height || opts.scale
+        ? {
+            width: opts.width ?? 800,
+            height: opts.height ?? 600,
+            deviceScaleFactor: opts.scale ?? 1,
+          }
+        : undefined,
+  };
+
+  const baseArgs = ["--no-sandbox", "--disable-setuid-sandbox"];
+  // Browser sources tried in order, all resolved by Puppeteer itself.
+  const puppeteerConfigs: Array<{ args: string[]; channel?: "chrome" }> = [
+    { args: baseArgs }, // PUPPETEER_EXECUTABLE_PATH or Puppeteer's bundled Chromium
+    { args: baseArgs, channel: "chrome" }, // system-installed Google Chrome
+  ];
+
   try {
-    await mmdcRun(
-      inputPath as `${string}.mmd`,
-      outputPath as `${string}.png`,
-      {
-        quiet: true,
-        puppeteerConfig: { args: ["--no-sandbox", "--disable-setuid-sandbox"] },
-        parseMMDOptions: {
-          backgroundColor: opts.backgroundColor ?? "white",
-          mermaidConfig: { theme: opts.theme ?? "default" },
-          viewport:
-            opts.width || opts.height || opts.scale
-              ? {
-                  width: opts.width ?? 800,
-                  height: opts.height ?? 600,
-                  deviceScaleFactor: opts.scale ?? 1,
-                }
-              : undefined,
-        },
-      },
-    );
+    let launchError: unknown;
+    let rendered = false;
+    for (const puppeteerConfig of puppeteerConfigs) {
+      try {
+        await mmdcRun(inputPath as `${string}.mmd`, outputPath as `${string}.png`, {
+          quiet: true,
+          puppeteerConfig,
+          parseMMDOptions,
+        });
+        rendered = true;
+        break;
+      } catch (err) {
+        if (!isBrowserLaunchError(err)) throw err; // genuine render/syntax error
+        launchError = err; // browser source unavailable — try the next one
+      }
+    }
+    if (!rendered) {
+      throw browserSetupError(launchError);
+    }
 
     const bytes = await readFile(outputPath);
     if (!bytes.subarray(0, 4).equals(PNG_MAGIC)) {
