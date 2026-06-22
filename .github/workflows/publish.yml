@@ -1,0 +1,26 @@
+name: Publish to npm
+
+# Tag-driven release:
+#   1. Bump the version in package.json on a PR and merge to main.
+#   2. Tag the merge commit: `git tag v0.1.0 && git push origin v0.1.0`
+#      (the tag must equal package.json version, or the job fails).
+# Pushing the tag runs the org's shared public-npm publish workflow, which
+# builds and publishes @volare-consulting/mermaid-mcp to the public registry,
+# authenticating with the org-level NPM_TOKEN secret.
+#
+# Tests are skipped: the suite drives headless Chromium that the publish
+# runner doesn't provision (same constraint as the fishon release).
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    uses: Volare-Consulting-Software/.github/.github/workflows/publish-npm-public.yml@main
+    with:
+      node-version: "20"
+      skip-tests: true
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
