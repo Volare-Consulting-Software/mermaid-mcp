@@ -33,22 +33,19 @@ npm run build
 
 ## Browser requirement
 
-Mermaid renders inside a real browser (it needs a DOM for layout), so a Chromium-family browser is
-required. The server finds one automatically, in this order:
+Mermaid renders inside a real browser (it needs a DOM for layout), so **Google Chrome / Chromium is
+required**. Puppeteer resolves it, in this order:
 
-1. **`MERMAID_MCP_EXECUTABLE_PATH`** or **`PUPPETEER_EXECUTABLE_PATH`** — an explicit path you set.
-2. **An installed system browser** — Google Chrome, Microsoft Edge, or Chromium, auto-detected at
-   the usual locations for your OS. If you already have one of these, **nothing extra to download**.
-3. **Puppeteer's bundled Chromium** — `@mermaid-js/mermaid-cli` downloads this during `npm install`
-   as a fallback for machines with no browser.
+1. **`PUPPETEER_EXECUTABLE_PATH`** — an explicit Chrome/Chromium binary you point it at.
+2. **Puppeteer's bundled Chromium** — downloaded by `@mermaid-js/mermaid-cli` during `npm install`.
+3. **A system-installed Google Chrome** — used as a fallback (`channel: "chrome"`) if the bundled
+   browser can't be launched.
 
-If none can be launched, the tool returns an actionable error telling you to install Chrome/Edge,
-run `npx puppeteer browsers install chrome`, or set `MERMAID_MCP_EXECUTABLE_PATH`.
+If none can be launched, the tool returns an actionable error: install Chrome, run
+`npx puppeteer browsers install chrome`, or set `PUPPETEER_EXECUTABLE_PATH`.
 
-> On some Windows machines Puppeteer's automatic Chromium download stalls mid-extraction. Having
-> Chrome or Edge installed sidesteps it entirely (option 2 above). To repair a stalled download,
-> delete the partial `%USERPROFILE%\.cache\puppeteer\chrome*\win64-*` folder and re-run
-> `npx puppeteer browsers install chrome`.
+> If Puppeteer's automatic Chromium download is blocked (a locked-down network, or — on some Windows
+> machines — a stalled extraction), just install Google Chrome and the renderer falls back to it.
 
 ## Test
 
