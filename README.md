@@ -55,7 +55,11 @@ After `npm run build`, point your MCP client at the built entry over stdio.
 ### Claude Code
 
 ```bash
+# From a local build:
 claude mcp add mermaid -- node /absolute/path/to/mermaid-mcp/dist/index.js
+
+# Or from the published package:
+claude mcp add mermaid -- npx -y @volare-consulting/mermaid-mcp
 ```
 
 ### Claude Desktop / generic `mcpServers` config
@@ -76,6 +80,24 @@ claude mcp add mermaid -- node /absolute/path/to/mermaid-mcp/dist/index.js
 ```bash
 npm run dev     # run the server from TypeScript source via tsx
 ```
+
+## Releasing
+
+Published to the public npm registry as
+[`@volare-consulting/mermaid-mcp`](https://www.npmjs.com/package/@volare-consulting/mermaid-mcp)
+via a tag-driven GitHub Actions release (`.github/workflows/publish.yml`), which calls the org's
+shared `publish-npm-public` reusable workflow.
+
+1. Bump `version` in `package.json` on a PR and merge to `main`.
+2. Tag the merge commit and push the tag:
+
+   ```bash
+   git tag v0.1.0 && git push origin v0.1.0
+   ```
+
+The tag **must** equal the `package.json` version or the job fails. Pushing a `v*` tag builds and
+publishes the package (tests are skipped — they need headless Chromium the publish runner doesn't
+provide). Authentication uses the org-level `NPM_TOKEN` secret.
 
 ## License
 
