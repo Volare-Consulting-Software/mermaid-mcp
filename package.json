@@ -17,7 +17,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
-    "smoke": "tsx scripts/smoke.ts"
+    "test": "node --import tsx --test test/render.test.ts test/mcp.test.ts"
   },
   "dependencies": {
     "@mermaid-js/mermaid-cli": "^11.4.2",

@@ -37,11 +37,16 @@ run `npx puppeteer browsers install chrome` (as above). It lands in Puppeteer's 
 (`~/.cache/puppeteer` / `%USERPROFILE%\.cache\puppeteer`). On Windows, if extraction stalls, delete
 the partial `chrome/win64-*` folder and re-run the install.
 
-## Smoke test
+## Test
 
 ```bash
-npm run smoke   # renders ./tmp/smoke.png and an inline render
+npm test
 ```
+
+Integration tests using Node's built-in test runner (`node:test`). They exercise the renderer
+(input validation, inline render, render-to-file) and a full MCP stdio round-trip (spawn the server,
+list tools, call `render_mermaid`). The render tests launch headless Chromium, so they need the
+Chromium install above and take a few seconds each.
 
 ## Configure in an MCP client
 
